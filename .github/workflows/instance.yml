@@ -1,0 +1,50 @@
+name: Create EC2 Instance
+
+on:
+  workflow_dispatch:
+    inputs:
+      InstanceName:
+        description: 'Name for the EC2 instance'
+        required: true
+      Region:
+        description: 'AWS region for the instance'
+        required: true
+      VPC_ID:
+        description: 'VPC ID for the instance'
+        required: true
+      InstanceType:
+        description: 'Instance Type'
+        required: true
+      Environment:
+        description: 'Env for the instance'
+        required: true
+      Owner:
+        description: 'Owner of the instance'
+        required: true
+
+jobs:
+  create-ec2-instance:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.0.0
+
+      - name: Terraform Init
+        working-directory: AWS_EC2/terraform
+        run: terraform init -backend-config="key="
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: AWS_EC2/terraform
+        run: terraform plan -var="EC2_instance_name=" -var="ec2_vpc_id=" -var-file="env_params/devl.tfvars"
+
+      - name: Terraform Apply
+        working-directory: AWS_EC2/terraform
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve -var="EC2_instance_name=" -var="ec2_vpc_id=" -var-file="env_params/devl.tfvars"
